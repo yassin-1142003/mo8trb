@@ -1,9 +1,9 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
-import userRoutes from './routes/userRoutes.js'; // ADD THIS - Import user routes
-import connectDB from './config/database.js'; // ADD THIS if you have a database connection file
-import { authenticate } from '../middleware/authMiddleware.js';
+import userRoutes from './auth.js';
+import connectDB from './config/db.js'; // ADD THIS if you have a database connection file
+
 
 dotenv.config();
 

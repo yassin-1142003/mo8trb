@@ -3,32 +3,29 @@ import express from "express";
 import mongoose from "mongoose";
 import multer from "multer";
 import jwt from "jsonwebtoken";
-import bcrypt from "bcryptjs"; // ✅ Add password hashing
+import bcrypt from "bcryptjs";
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
 import morgan from "morgan";
 import dotenv from "dotenv";
 import cors from "cors";
 import compression from "compression";
-import fs from "fs"; // ✅ For file system operations
+import fs from "fs";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
-import savedSearchRoutes from "./routes/savedSearchRoutes.js";
-import Apartment from "./models/Apartment.js";
-import Image from './models/image.model.js';
-
-
-// ✅ Fix __dirname for ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 // ------------------ [ 2. تحميل المتغيرات من .env ] ------------------
 dotenv.config();
 
-// ✅ Initialize Express app
+// ------------------ [ 3. إصلاح __dirname في ES Modules ] ------------------
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// ------------------ [ 4. تهيئة التطبيق ] ------------------
 const app = express();
 
 // ✅ Add compression middleware FIRST
+// ✅ الضغط
 app.use(
   compression({
     threshold: 1024,
@@ -42,34 +39,16 @@ app.use(
   })
 );
 
-// ✅ Add security middleware
-app.use(helmet());
 
-// Add rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-});
+// ------------------ [ 1. استدعاء الحزم ] ------------------
+// ✅ JSON Parser
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
-app.use(limiter);
+// ✅ Static files
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// ✅ Handle production environment - Move this BEFORE other middleware
-if (process.env.NODE_ENV === "production") {
-  // Trust proxy for EvenNode
-  app.set("trust proxy", 1);
-
-  // Enhanced security headers
-  app.use((req, res, next) => {
-    res.setHeader("X-Content-Type-Options", "nosniff");
-    res.setHeader("X-Frame-Options", "DENY");
-    res.setHeader("X-XSS-Protection", "1; mode=block");
-    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-    res.setHeader("Content-Security-Policy", "default-src 'self'");
-    next();
-  });
-}
-
-// ✅ Enhanced CORS configuration
+// ✅ CORS
 app.use(
   cors({
     origin: process.env.FRONTEND_URL || "http://localhost:5173",
@@ -80,51 +59,70 @@ app.use(
   })
 );
 
-app.use(express.json({ limit: "10mb" })); // ✅ Increase JSON limit
-app.use(express.urlencoded({ extended: true, limit: "10mb" })); // ✅ Add URL-encoded support
+// ✅ Helmet (أمان)
+app.use(helmet());
 
-// ✅ Request logging middleware
+// ✅ Morgan (التسجيل)
+app.use(morgan("dev"));
+
+// ✅ Rate Limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+});
+app.use(limiter);
+
+// ✅ Logger داخلي
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
   next();
 });
 
-// ✅ Enhanced uploads directory handling
+// ✅ إنشاء مجلد للصور
 let uploadsDir = path.join(__dirname, "uploads");
-
-// Create uploads directory with fallback
 const createUploadsDir = () => {
   try {
     if (!fs.existsSync(uploadsDir)) {
       fs.mkdirSync(uploadsDir, { recursive: true });
-      console.log("✅ Uploads directory created at:", uploadsDir);
+      console.log("✅ Uploads directory created:", uploadsDir);
     }
   } catch (error) {
-    console.error("❌ Failed to create uploads directory:", error);
-    // Use temp directory as fallback
+    console.error("❌ Failed to create uploads dir:", error);
     uploadsDir = path.join("/tmp", "uploads");
     try {
       if (!fs.existsSync(uploadsDir)) {
         fs.mkdirSync(uploadsDir, { recursive: true });
-        console.log("✅ Fallback uploads directory created at:", uploadsDir);
+        console.log("✅ Fallback uploads directory created:", uploadsDir);
       }
     } catch (fallbackError) {
-      console.error("❌ Failed to create fallback uploads directory:", fallbackError);
-      uploadsDir = "./uploads"; // Last resort
+      console.error("❌ Failed fallback dir:", fallbackError);
+      uploadsDir = "./uploads";
     }
   }
 };
-
-// Call the function during app initialization
 createUploadsDir();
-
 export { uploadsDir };
 
-// Initialize uploads directory
-// createUploadsDir();
+// ------------------ [ 7. الراوتس (المسارات) ] ------------------
 
-// ------------------ [ 6. الاتصال بقاعدة البيانات ] ------------------
-// ✅ Enhanced MongoDB connection with retry logic
+import userRoutes from "./routes/users.js";
+import apartmentRoutes from "./routes/apartments.js";
+import commentRoutes from "./routes/reviewRoutes.js";
+import savedSearchRoutes from "./routes/savedSearchRoutes.js";
+
+
+// استخدمهم في التطبيق
+app.use("/api/users", userRoutes);
+app.use("/api/apartments", apartmentRoutes);
+app.use("/api/comments", commentRoutes);
+app.use("/api/saved-search", savedSearchRoutes);
+
+
+// Route اختباري بسيط
+app.get("/", (req, res) => {
+  res.send("✅ Server is running");
+});
+
 // ✅ Enhanced MongoDB connection with retry logic
 const connectDB = async () => {
   const maxRetries = 5;
@@ -380,15 +378,11 @@ app.post(
         national_id,
         phone,
       } = req.body;
+
       console.log("📝 Registration attempt for:", email);
+
       // ✅ Input validation
-      if (
-        !name ||
-        !email ||
-        !password ||
-        !password_confirmation ||
-        !national_id
-      ) {
+      if (!name || !email || !password || !password_confirmation || !national_id) {
         return res.status(400).json({
           success: false,
           message:
@@ -396,39 +390,24 @@ app.post(
         });
       }
 
+      // ✅ Check password and confirmation match
       if (password !== password_confirmation) {
         return res.status(400).json({
           success: false,
-          message: "Passwords do not match",
+          message: "Password and confirmation do not match",
         });
       }
 
-      if (password.length < 6) {
-        return res.status(400).json({
-          success: false,
-          message: "Password must be at least 6 characters long",
-        });
-      }
-
-      // ✅ Check if user already exists
-      const existingUser = await User.findOne({
-        $or: [{ email }, { national_id }],
-      });
-
+      // ✅ Check if user already exists by email or national_id (optional)
+      const existingUser = await User.findOne({ email });
       if (existingUser) {
-        return res.status(400).json({
+        return res.status(409).json({
           success: false,
-          message: "Email or National ID already registered",
+          message: "Email is already registered",
         });
       }
 
-      // ✅ Handle file uploads
-      const avatar = req.files?.["avatar"] ? req.files["avatar"][0].path : null;
-      const nationalIdPic = req.files?.["national_id_pic"]
-        ? req.files["national_id_pic"][0].path
-        : null;
-
-      // ✅ Create new user (password will be hashed by pre-save middleware)
+      // ✅ Create new user object
       const newUser = new User({
         name: name.trim(),
         email: email.toLowerCase().trim(),
@@ -437,119 +416,54 @@ app.post(
         role_id,
         national_id,
         phone,
-        avatar,
-        national_id_pic: nationalIdPic,
       });
 
+      // ✅ Attach uploaded files if any
+      if (req.files) {
+        if (req.files.avatar && req.files.avatar[0]) {
+          newUser.avatar = req.files.avatar[0].filename;
+        }
+        if (req.files.national_id_pic && req.files.national_id_pic[0]) {
+          newUser.national_id_pic = req.files.national_id_pic[0].filename;
+        }
+      }
+
+      // ✅ Save user to DB (password hashing should be handled in User model pre-save middleware)
       await newUser.save();
 
-      // ✅ Generate JWT token
-      const token = jwt.sign(
-        { id: newUser._id, email: newUser.email, role: newUser.role },
-        process.env.JWT_SECRET,
-        { expiresIn: "7d" }
-      );
-
-      // ✅ Remove password from response
-      const userResponse = newUser.toObject();
-      delete userResponse.password;
-
+      // ✅ Return success response (without password)
       res.status(201).json({
         success: true,
         message: "User registered successfully",
-        data: {
-          user: userResponse,
-          token,
+        user: {
+          id: newUser._id,
+          name: newUser.name,
+          email: newUser.email,
+          role: newUser.role,
+          phone: newUser.phone,
+          avatar: newUser.avatar,
+          national_id: newUser.national_id,
+          national_id_pic: newUser.national_id_pic,
+          status: newUser.status,
         },
       });
     } catch (error) {
-      console.error("Registration error:", error);
-
-      // ✅ Handle duplicate key error
+      console.error("❌ Registration error:", error);
+      // Handle duplicate key error (email unique constraint)
       if (error.code === 11000) {
-        return res.status(400).json({
+        return res.status(409).json({
           success: false,
-          message: "Email already exists",
+          message: "Email or National ID already exists",
         });
       }
-
       res.status(500).json({
         success: false,
         message: "Server error during registration",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }
   }
 );
 
-// ✅ Enhanced login
-app.post("/api/users/login", async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "Email and password are required",
-      });
-    }
-
-    // ✅ Find user and include password for comparison
-    const user = await User.findOne({ email: email.toLowerCase().trim() });
-
-    if (!user) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid credentials",
-      });
-    }
-
-    // ✅ Check if user is active
-    if (user.status !== "active") {
-      return res.status(400).json({
-        success: false,
-        message: "Account is inactive or banned",
-      });
-    }
-
-    // ✅ Compare password
-    const isPasswordValid = await user.comparePassword(password);
-
-    if (!isPasswordValid) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid credentials",
-      });
-    }
-
-    // ✅ Generate JWT token
-    const token = jwt.sign(
-      { id: user._id, email: user.email, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
-
-    // ✅ Remove password from response
-    const userResponse = user.toObject();
-    delete userResponse.password;
-
-    res.json({
-      success: true,
-      message: "Login successful",
-      data: {
-        user: userResponse,
-        token,
-      },
-    });
-  } catch (error) {
-    console.error("Login error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Server error during login",
-    });
-  }
-});
 
 // ✅ Enhanced apartment creation with detailed error handling and debugging
 app.post(
@@ -749,7 +663,8 @@ app.post(
       const apartment = new Apartment(apartmentData);
 
       console.log("💾 Saving apartment to database...");
-      await res.json(apartment);
+      await apartment.save(); // احفظ بيانات الشقة في قاعدة البيانات
+
       console.log("✅ Apartment saved successfully with ID:", apartment._id);
 
       console.log("🎉 Apartment creation completed successfully");
@@ -765,8 +680,6 @@ app.post(
       // ✅ Enhanced error response with more details
       let errorMessage = "Server error creating apartment";
       let statusCode = 500;
-
-      // Handle specific MongoDB errors
       if (error.name === "ValidationError") {
         errorMessage =
           "Validation error: " +
@@ -785,7 +698,7 @@ app.post(
         statusCode = 500;
       }
 
-      res.status(statusCode).json({
+      return res.status(statusCode).json({
         success: false,
         message: errorMessage,
         error_type: error.name,
@@ -803,6 +716,7 @@ app.post(
     }
   }
 );
+
 
 // ✅ Add a test endpoint to verify the setup
 app.get("/api/apartments/test", authenticateToken, async (req, res) => {
@@ -837,14 +751,14 @@ app.get("/api/apartments/test", authenticateToken, async (req, res) => {
 app.get("/api/apartments", async (req, res) => {
   try {
     console.log("📋 Fetching all apartments...");
-    
+
     const apartments = await Apartment.find()
       .populate("owner", "name email phone")
       .sort({ created_at: -1 })
       .lean(); // Use lean() to avoid validation issues
 
     console.log(`✅ Found ${apartments.length} apartments`);
-    
+
     res.json({
       success: true,
       data: apartments,
@@ -852,7 +766,7 @@ app.get("/api/apartments", async (req, res) => {
     });
   } catch (error) {
     console.error("❌ Get all apartments error:", error);
-    
+
     res.status(500).json({
       success: false,
       message: "Error fetching apartments",
@@ -865,7 +779,7 @@ app.get("/api/apartments", async (req, res) => {
 app.get("/api/apartments/my", authenticateToken, async (req, res) => {
   try {
     console.log(`📋 Fetching apartments for user: ${req.user._id}`);
-    
+
     const apartments = await Apartment.find({ owner: req.user._id })
       .populate("owner", "name email phone")
       .sort({ created_at: -1 })
@@ -880,7 +794,7 @@ app.get("/api/apartments/my", authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error("❌ Get my apartments error:", error);
-    
+
     res.status(500).json({
       success: false,
       message: "Error fetching your apartments",
@@ -905,10 +819,10 @@ app.get("/api/apartments/:id", async (req, res) => {
     }
 
     console.log("🔍 Searching for apartment...");
-    
+
     // First, try to find the apartment without populating
     const apartmentExists = await Apartment.findById(id).lean();
-    
+
     if (!apartmentExists) {
       console.log("❌ Apartment not found in database");
       return res.status(404).json({
@@ -918,7 +832,7 @@ app.get("/api/apartments/:id", async (req, res) => {
     }
 
     console.log("✅ Apartment exists, now populating owner data...");
-    
+
     // If apartment exists, get it with populated owner data
     const apartment = await Apartment.findById(id)
       .populate("owner", "name email phone")
@@ -945,14 +859,13 @@ app.get("/api/apartments/:id", async (req, res) => {
       success: true,
       data: {
         ...apartment,
-        views: (apartment.views || 0) + 1
+        views: (apartment.views || 0) + 1,
       },
     });
-    
   } catch (error) {
     console.error("❌ Get apartment by ID error:", error);
     console.error("❌ Error stack:", error.stack);
-    
+
     res.status(500).json({
       success: false,
       message: "Error fetching apartment",
@@ -1050,30 +963,32 @@ app.put(
       ).populate("owner", "name email phone");
 
       console.log("✅ Apartment updated successfully");
-      
+
       res.json({
         success: true,
         message: "Apartment updated successfully",
         data: updatedApartment,
       });
-      
     } catch (error) {
       console.error("❌ Update apartment error:", error);
-      
+
       // Handle validation errors specifically
-      if (error.name === 'ValidationError') {
-        const validationErrors = Object.values(error.errors).map(err => err.message);
+      if (error.name === "ValidationError") {
+        const validationErrors = Object.values(error.errors).map(
+          (err) => err.message
+        );
         return res.status(400).json({
           success: false,
           message: "Validation failed",
-          errors: validationErrors
+          errors: validationErrors,
         });
       }
-      
+
       res.status(500).json({
         success: false,
         message: "Error updating apartment",
-        error: process.env.NODE_ENV === "development" ? error.message : undefined,
+        error:
+          process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }
   }
@@ -1275,7 +1190,6 @@ app.get("/health", (req, res) => {
 import imageRoutes from "./routes/imageRoutes.js";
 app.use("/api/images", imageRoutes);
 
-
 // ✅ Root endpoint
 app.get("/", (req, res) => {
   res.json({
@@ -1363,6 +1277,7 @@ const startServer = async () => {
     process.exit(1);
   }
 };
+export default router;
 
 // ✅ Start the application
 startServer();
