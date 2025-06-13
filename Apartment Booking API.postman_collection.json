@@ -1,0 +1,1087 @@
+{
+  "info": {
+    "_postman_id": "1d840c43-66bd-433c-8989-f43b450c1fd2",
+    "name": "Apartment Booking API - Complete CRUD with Saved Search",
+    "description": "Complete API collection for Apartment Booking system with full CRUD operations for Auth, Users, Apartments, and Saved Searches",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "31704619"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register (Form Data)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "name",
+                  "value": "Youssef",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "youssef@example.com",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "123456",
+                  "type": "text"
+                },
+                {
+                  "key": "password_confirmation",
+                  "value": "123456",
+                  "type": "text"
+                },
+                {
+                  "key": "role",
+                  "value": "owner",
+                  "type": "text"
+                },
+                {
+                  "key": "role_id",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "national_id",
+                  "value": "12345678901234",
+                  "type": "text"
+                },
+                {
+                  "key": "avatar",
+                  "type": "file",
+                  "src": "/path/to/avatar.jpg"
+                },
+                {
+                  "key": "national_id_pic",
+                  "type": "file",
+                  "src": "/path/to/national_id_pic.jpg"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/user/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "user", "register"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Register (JSON)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Youssef JSON\",\n  \"email\": \"youssef.json@example.com\",\n  \"password\": \"123456\",\n  \"password_confirmation\": \"123456\",\n  \"role\": \"owner\",\n  \"role_id\": \"1\",\n  \"national_id\": \"12345678901234\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/user/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "user", "register"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"youssef@example.com\",\n  \"password\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/user/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "user", "login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/user/logout",
+              "host": ["{{base_url}}"],
+              "path": ["api", "user", "logout"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/user/refresh",
+              "host": ["{{base_url}}"],
+              "path": ["api", "user", "refresh"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/user/profile",
+              "host": ["{{base_url}}"],
+              "path": ["api", "user", "profile"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Create User (Admin Only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Admin Created User\",\n  \"email\": \"admin.created@example.com\",\n  \"password\": \"123456\",\n  \"password_confirmation\": \"123456\",\n  \"role\": \"tenant\",\n  \"role_id\": \"2\",\n  \"national_id\": \"98765432109876\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/users",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/users",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get User by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/users/{{user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "{{user_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Youssef Updated\",\n  \"email\": \"youssef.updated@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/users/{{user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "{{user_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/users/{{user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "{{user_id}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Apartments",
+      "item": [
+        {
+          "name": "Create Apartment (Form Data)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "title",
+                  "value": "Spacious 3BR Apartment in Dokki",
+                  "type": "text"
+                },
+                {
+                  "key": "description",
+                  "value": "Beautiful apartment in the heart of Cairo",
+                  "type": "text"
+                },
+                {
+                  "key": "price",
+                  "value": "5000",
+                  "type": "text"
+                },
+                {
+                  "key": "bedrooms",
+                  "value": "3",
+                  "type": "text"
+                },
+                {
+                  "key": "bathrooms",
+                  "value": "2",
+                  "type": "text"
+                },
+                {
+                  "key": "square_feet",
+                  "value": "120",
+                  "type": "text"
+                },
+                {
+                  "key": "address",
+                  "value": "123 Nile St.",
+                  "type": "text"
+                },
+                {
+                  "key": "city",
+                  "value": "Cairo",
+                  "type": "text"
+                },
+                {
+                  "key": "town",
+                  "value": "Dokki",
+                  "type": "text"
+                },
+                {
+                  "key": "listing_type",
+                  "value": "for_rent",
+                  "type": "text"
+                },
+                {
+                  "key": "is_furnished",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "floor_number",
+                  "value": "2",
+                  "type": "text"
+                },
+                {
+                  "key": "is_featured",
+                  "value": "false",
+                  "type": "text"
+                },
+                {
+                  "key": "availability_date",
+                  "value": "2025-06-15",
+                  "type": "text"
+                },
+                {
+                  "key": "features[]",
+                  "value": "AC",
+                  "type": "text"
+                },
+                {
+                  "key": "features[]",
+                  "value": "Wi-Fi",
+                  "type": "text"
+                },
+                {
+                  "key": "features[]",
+                  "value": "Parking",
+                  "type": "text"
+                },
+                {
+                  "key": "images[]",
+                  "type": "file",
+                  "src": "/path/to/apartment_image1.jpg"
+                },
+                {
+                  "key": "images[]",
+                  "type": "file",
+                  "src": "/path/to/apartment_image2.jpg"
+                },
+                {
+                  "key": "images[]",
+                  "type": "file",
+                  "src": "/path/to/apartment_image3.jpg"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/apartments",
+              "host": ["{{base_url}}"],
+              "path": ["api", "apartments"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Apartment (JSON)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Modern 2BR Apartment in Zamalek\",\n  \"description\": \"Luxurious apartment with Nile view\",\n  \"price\": 8000,\n  \"bedrooms\": 2,\n  \"bathrooms\": 2,\n  \"square_feet\": 100,\n  \"address\": \"456 Zamalek St.\",\n  \"city\": \"Cairo\",\n  \"town\": \"Zamalek\",\n  \"listing_type\": \"rent\",\n  \"is_furnished\": true,\n  \"floor_number\": 5,\n  \"is_featured\": true,\n  \"availability_date\": \"2025-07-01\",\n  \"features\": [\"AC\", \"Wi-Fi\", \"Balcony\", \"Security\"]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/apartments",
+              "host": ["{{base_url}}"],
+              "path": ["api", "apartments"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Apartments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/apartments?page=1&per_page=10&city=Cairo&min_price=1000&max_price=10000&bedrooms=3&listing_type=rent",
+              "host": ["{{base_url}}"],
+              "path": ["api", "apartments"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "per_page",
+                  "value": "10"
+                },
+                {
+                  "key": "city",
+                  "value": "Cairo"
+                },
+                {
+                  "key": "min_price",
+                  "value": "1000"
+                },
+                {
+                  "key": "max_price",
+                  "value": "10000"
+                },
+                {
+                  "key": "bedrooms",
+                  "value": "3"
+                },
+                {
+                  "key": "listing_type",
+                  "value": "rent"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Apartments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/apartments/my",
+              "host": ["{{base_url}}"],
+              "path": ["api", "apartments", "my"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Apartment by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/apartments/{{apartment_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "apartments", "{{apartment_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Apartment",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price\": 6000,\n  \"bedrooms\": 4,\n  \"bathrooms\": 3,\n  \"is_featured\": true,\n  \"description\": \"Updated beautiful apartment with great amenities\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/apartments/{{apartment_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "apartments", "{{apartment_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Apartment",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/apartments/{{apartment_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "apartments", "{{apartment_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Book Apartment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"start_date\": \"2025-07-01\",\n  \"end_date\": \"2025-07-31\",\n  \"notes\": \"Looking forward to staying here\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/apartments/book/{{apartment_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "apartments", "book", "{{apartment_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Apartment Bookings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/apartments/{{apartment_id}}/bookings",
+              "host": ["{{base_url}}"],
+              "path": ["api", "apartments", "{{apartment_id}}", "bookings"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+
+"item": [
+    {
+      "name": "Reviews",
+      "item": [
+        {
+          "name": "Create Review",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rating\": 5,\n  \"comment\": \"Fantastic place!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/reviews/{{apartment_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "reviews",
+                "{{apartment_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Apartment Reviews",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/reviews/{{apartment_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "reviews",
+                "{{apartment_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Review",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rating\": 4,\n  \"comment\": \"Updated comment text\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/reviews/{{review_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "reviews",
+                "{{review_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Review",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/reviews/{{review_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "reviews",
+                "{{review_id}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Saved Searches",
+      "item": [
+        {
+          "name": "Create Saved Search",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"My Dream Apartment Search\",\n  \"search_criteria\": {\n    \"city\": \"Cairo\",\n    \"town\": \"Dokki\",\n    \"min_price\": 3000,\n    \"max_price\": 8000,\n    \"bedrooms\": 3,\n    \"bathrooms\": 2,\n    \"listing_type\": \"rent\",\n    \"is_furnished\": true,\n    \"min_square_feet\": 100,\n    \"max_square_feet\": 200,\n    \"features\": [\"AC\", \"Wi-Fi\", \"Parking\"]\n  },\n  \"notify_on_new_listings\": true,\n  \"is_active\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/saved-searches",
+              "host": ["{{base_url}}"],
+              "path": ["api", "saved-searches"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All My Saved Searches",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/saved-searches?page=1&per_page=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "saved-searches"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "per_page",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Saved Search by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/saved-searches/{{saved_search_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "saved-searches", "{{saved_search_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Saved Search",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Dream Apartment Search\",\n  \"search_criteria\": {\n    \"city\": \"Cairo\",\n    \"town\": \"Zamalek\",\n    \"min_price\": 4000,\n    \"max_price\": 10000,\n    \"bedrooms\": 4,\n    \"bathrooms\": 3,\n    \"listing_type\": \"rent\",\n    \"is_furnished\": true,\n    \"features\": [\"AC\", \"Wi-Fi\", \"Parking\", \"Balcony\", \"Security\"]\n  },\n  \"notify_on_new_listings\": false,\n  \"is_active\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/saved-searches/{{saved_search_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "saved-searches", "{{saved_search_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Saved Search",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/saved-searches/{{saved_search_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "saved-searches", "{{saved_search_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Execute Saved Search",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/saved-searches/{{saved_search_id}}/execute?page=1&per_page=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "saved-searches", "{{saved_search_id}}", "execute"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "per_page",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Toggle Saved Search Active Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"is_active\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/saved-searches/{{saved_search_id}}/toggle-status",
+              "host": ["{{base_url}}"],
+              "path": ["api", "saved-searches", "{{saved_search_id}}", "toggle-status"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Saved Search Statistics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/saved-searches/{{saved_search_id}}/stats",
+              "host": ["{{base_url}}"],
+              "path": ["api", "saved-searches", "{{saved_search_id}}", "stats"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://your-api-domain.com",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "your-auth-token-here",
+      "type": "string"
+    },
+    {
+      "key": "user_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "apartment_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "saved_search_id",
+      "value": "1",
+      "type": "string"
+    }
+  ]
+}
