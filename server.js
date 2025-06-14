@@ -111,6 +111,13 @@ createUploadsDir();
 export { uploadsDir };
 
 // ------------------ [ 6. Static uploads route ] ------------------
+// Normalise badly-formed URLs like //uploads/xxx → /uploads/xxx
+app.use((req, res, next) => {
+  if (req.url.startsWith("//uploads/")) {
+    req.url = req.url.replace(/^\/+/g, "/"); // collapse multiple leading slashes
+  }
+  next();
+});
 // Make uploaded images publicly accessible at https://<host>/uploads/<filename>
 app.use("/uploads", express.static(uploadsDir));
 
