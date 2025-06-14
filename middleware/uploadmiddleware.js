@@ -4,7 +4,8 @@ import path from 'path';
 import fs from 'fs';
 
 // تأكد من وجود مجلد الصور
-const uploadDir = 'uploads/apartments/';
+// Use a generic uploads directory so it works for various routes
+const uploadDir = 'uploads/';
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
@@ -28,13 +29,19 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-export const uploadApartmentImage = multer({
-  storage: storage,
-  fileFilter: fileFilter,
+// Default multer instance (allows .single, .array, .fields as needed)
+const upload = multer({
+  storage,
+  fileFilter,
   limits: {
-    fileSize: 5 * 1024 * 1024 // حد أقصى 5MB
-  }
-}).single('apartment_pic');
+    fileSize: 5 * 1024 * 1024, // 5 MB
+  },
+});
+
+export default upload;
+
+// Helper middleware for apartment pictures (single file)
+export const uploadApartmentImage = upload.single('apartment_pic');
 
 // middleware للتعامل مع أخطاء رفع الملفات
 export const handleUploadError = (error, req, res, next) => {

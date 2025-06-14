@@ -7,9 +7,13 @@ import {
   updateSavedSearch,
   deleteSavedSearch,
 } from "../controllers/savedSearchController.js";
+import authenticateToken from "../middleware/authenticateToken.js";
 
 
 const router = express.Router();
+
+// Apply authentication middleware to all routes in this router
+router.use(authenticateToken);
 
 // All routes require authentication
 

@@ -11,8 +11,12 @@ import dotenv from "dotenv";
 import cors from "cors";
 import compression from "compression";
 import fs from "fs";
+import killPort from "kill-port";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
+import cookieParser from "cookie-parser";
+import User from "./models/User.js";
+import Apartment from "./models/Apartment.js";
 
 // ------------------ [ 2. تحميل المتغيرات من .env ] ------------------
 dotenv.config();
@@ -65,6 +69,9 @@ app.use(helmet());
 // ✅ Morgan (التسجيل)
 app.use(morgan("dev"));
 
+// ✅ Cookie Parser (for reading token from cookies as fallback)
+app.use(cookieParser());
+
 // ✅ Rate Limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -105,22 +112,61 @@ export { uploadsDir };
 
 // ------------------ [ 7. الراوتس (المسارات) ] ------------------
 
-import userRoutes from "./routes/users.js";
-import apartmentRoutes from "./routes/apartments.js";
-import commentRoutes from "./routes/reviewRoutes.js";
+import userRoutes from "./routes/auth.js";
+// import apartmentRoutes from "./routes/apartments.js"; // Disabled to prevent duplicate routing
+import reviewRoutes from "./routes/reviewRoutes.js";
 import savedSearchRoutes from "./routes/savedSearchRoutes.js";
 
 
 // استخدمهم في التطبيق
 app.use("/api/users", userRoutes);
-app.use("/api/apartments", apartmentRoutes);
-app.use("/api/comments", commentRoutes);
-app.use("/api/saved-search", savedSearchRoutes);
+// app.use("/api/apartments", apartmentRoutes); // Disabled duplicate router
+app.use("/api/reviews", reviewRoutes);
+// app.use("/api/saved-searches", savedSearchRoutes); // Duplicate mount removed, authentication enforced in routes
 
 
-// Route اختباري بسيط
+// ✅ API root - list all main endpoints
 app.get("/", (req, res) => {
-  res.send("✅ Server is running");
+  res.json({
+    success: true,
+    message: "Real Estate API - available endpoints",
+    endpoints: {
+      auth: {
+        register: "POST /api/users/register",
+        login: "POST /api/users/login",
+        logout: "POST /api/users/logout",
+        refresh: "POST /api/users/refresh",
+        profile: "GET /api/users/profile",
+        update_profile: "PUT /api/users/profile",
+      },
+      users_admin: {
+        list_users: "GET /api/users (admin)",
+        create_user: "POST /api/users (admin)",
+        get_user: "GET /api/users/:id (admin)",
+      },
+      apartments: {
+        create: "POST /api/apartments",
+        list: "GET /api/apartments",
+        my_apartments: "GET /api/apartments/my",
+        single: "GET /api/apartments/:id",
+        update: "PUT /api/apartments/:id",
+      },
+      reviews: {
+        add: "POST /api/reviews/:apartmentId",
+        update: "PUT /api/reviews/:reviewId",
+        delete: "DELETE /api/reviews/:reviewId",
+      },
+      saved_searches: {
+        create: "POST /api/saved-searches",
+        list: "GET /api/saved-searches",
+        stats: "GET /api/saved-searches/:id/stats",
+        execute: "POST /api/saved-searches/:id/execute",
+        delete: "DELETE /api/saved-searches/:id",
+      },
+      uploads: "GET /uploads/:filename",
+      health: "GET /health",
+    },
+  });
 });
 
 // ✅ Enhanced MongoDB connection with retry logic
@@ -223,7 +269,7 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
-const User = mongoose.model("User", userSchema);
+// Using imported User model (defined in ./models/User.js)
 
 // ✅ Enhanced Apartment Schema
 const apartmentSchema = new mongoose.Schema(
@@ -320,8 +366,15 @@ const upload = multer({
 
 // ✅ Enhanced JWT middleware
 function authenticateToken(req, res, next) {
-  const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1];
+  const authHeader = req.headers["authorization"] || req.headers["x-access-token"];
+  let token;
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    token = authHeader.split(" ")[1];
+  } else if (authHeader) {
+    token = authHeader; // token sent without Bearer prefix
+  } else if (req.cookies && req.cookies.token) {
+    token = req.cookies.token; // token from cookies
+  }
 
   if (!token) {
     return res.status(401).json({
@@ -341,10 +394,17 @@ function authenticateToken(req, res, next) {
     try {
       // ✅ Get fresh user data
       const user = await User.findById(decoded.id).select("-password");
-      if (!user || user.status !== "active") {
+      if (!user) {
         return res.status(401).json({
           success: false,
-          message: "User not found or inactive",
+          message: "User not found",
+        });
+      }
+      // If the model contains a status field and it is not active, block access
+      if (typeof user.status !== "undefined" && user.status !== "active") {
+        return res.status(403).json({
+          success: false,
+          message: "User is inactive or banned",
         });
       }
 
@@ -421,10 +481,10 @@ app.post(
       // ✅ Attach uploaded files if any
       if (req.files) {
         if (req.files.avatar && req.files.avatar[0]) {
-          newUser.avatar = req.files.avatar[0].filename;
+          newUser.avatar = `/uploads/${req.files.avatar[0].filename}`;
         }
         if (req.files.national_id_pic && req.files.national_id_pic[0]) {
-          newUser.national_id_pic = req.files.national_id_pic[0].filename;
+          newUser.national_id_pic = `/uploads/${req.files.national_id_pic[0].filename}`;
         }
       }
 
@@ -625,7 +685,7 @@ app.post(
       }
 
       // ✅ Handle multiple image uploads
-      const apartmentPics = req.files ? req.files.map((file) => file.path) : [];
+      const apartmentPics = req.files ? req.files.map((file) => `/uploads/${file.filename}`) : [];
       console.log("📸 Processed apartment pics:", apartmentPics);
 
       // ✅ Create apartment object with validated data
@@ -920,7 +980,7 @@ app.put(
       // Handle new images if uploaded
       if (req.files && req.files.length > 0) {
         console.log(`📸 Adding ${req.files.length} new images`);
-        const newPics = req.files.map((file) => file.path);
+        const newPics = req.files.map((file) => `/uploads/${file.filename}`);
         updateData.apartment_pics = [
           ...(apartment.apartment_pics || []),
           ...newPics,
@@ -997,9 +1057,17 @@ app.put(
 app.get("/api/users/profile", authenticateToken, async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select("-password");
+    // Count apartments (advertisements) owned by the user
+    const apartmentsCount = await Apartment.countDocuments({ owner: req.user._id });
+    const apartmentsInfo = `You have ${apartmentsCount} advertisement${apartmentsCount === 1 ? "" : "s"}`;
+
     res.json({
       success: true,
-      data: user,
+      data: {
+        ...user.toObject(),
+        apartments_count: apartmentsCount,
+        apartments_info: apartmentsInfo,
+      },
     });
   } catch (error) {
     res.status(500).json({
@@ -1051,9 +1119,9 @@ app.post(
       }
 
       // Handle file uploads
-      const avatar = req.files?.["avatar"] ? req.files["avatar"][0].path : null;
+      const avatar = req.files?.["avatar"] ? `/uploads/${req.files["avatar"][0].filename}` : null;
       const nationalIdPic = req.files?.["national_id_pic"]
-        ? req.files["national_id_pic"][0].path
+        ? `/uploads/${req.files["national_id_pic"][0].filename}`
         : null;
 
       // Create new user
@@ -1150,23 +1218,72 @@ app.get("/api/users/:id", authenticateToken, async (req, res) => {
 app.put(
   "/api/users/profile",
   authenticateToken,
-  upload.single("avatar"),
+  upload.fields([
+    { name: "avatar", maxCount: 1 },
+    { name: "national_id_pic", maxCount: 1 },
+  ]),
   async (req, res) => {
     try {
-      const updateFields = { ...req.body };
-      if (req.file) {
-        updateFields.avatar = req.file.path;
+      const {
+        name,
+        email,
+        phone,
+        password,
+        password_confirmation,
+      } = req.body;
+
+      const updateFields = {};
+
+      if (name) updateFields.name = name.trim();
+      if (email) updateFields.email = email.toLowerCase().trim();
+      if (phone) updateFields.phone = phone.trim();
+
+      // Handle avatar / national_id_pic uploads (if any)
+      if (req.files && req.files.avatar && req.files.avatar[0]) {
+        updateFields.avatar = `/uploads/${req.files.avatar[0].filename}`;
       }
-      const user = await User.findByIdAndUpdate(req.user._id, updateFields, {
+      if (req.files && req.files.national_id_pic && req.files.national_id_pic[0]) {
+        updateFields.national_id_pic = `/uploads/${req.files.national_id_pic[0].filename}`;
+      }
+
+      // Handle password update with confirmation & hashing
+      if (password) {
+        if (password.length < 6) {
+          return res.status(400).json({
+            success: false,
+            message: "Password must be at least 6 characters",
+          });
+        }
+        if (!password_confirmation || password !== password_confirmation) {
+          return res.status(400).json({
+            success: false,
+            message: "Password and confirmation do not match",
+          });
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        updateFields.password = await bcrypt.hash(password, salt);
+      }
+
+      if (Object.keys(updateFields).length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "No valid fields provided for update",
+        });
+      }
+
+      const updatedUser = await User.findByIdAndUpdate(req.user._id, updateFields, {
         new: true,
         runValidators: true,
       }).select("-password");
+
       res.json({
         success: true,
         message: "Profile updated successfully",
-        data: user,
+        data: updatedUser,
       });
     } catch (error) {
+      console.error("Update profile error:", error);
       res.status(500).json({
         success: false,
         message: "Server error updating profile",
@@ -1174,7 +1291,7 @@ app.put(
     }
   }
 );
-app.use("/api/saved-searches", authenticateToken, savedSearchRoutes);
+app.use("/api/saved-searches", savedSearchRoutes); // Authentication handled within routes
 // ✅ Static files serving
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
@@ -1238,46 +1355,60 @@ app.use("*", (req, res) => {
   });
 });
 
-// ✅ Enhanced server startup
+// ✅ Enhanced server startup with automatic port fallback
 const startServer = async () => {
   try {
-    // Connect to database first
+    // Connect to DB first
     await connectDB();
 
-    // Start server
-    const PORT = process.env.PORT || 5000;
+    const basePort = parseInt(process.env.PORT, 10) || 5000;
+    // 🔄 Retry indefinitely until port 5000 becomes free
+    const maxAttempts = Infinity;
 
-    const server = app.listen(PORT, "0.0.0.0", () => {
-      console.log("🚀 =================================");
-      console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`🚀 Environment: ${process.env.NODE_ENV || "development"}`);
-      console.log(`📁 Uploads directory: ${uploadsDir}`);
-      console.log(`🌐 Health check: http://localhost:${PORT}/health`);
-      console.log("🚀 =================================");
-    });
+    const attemptListen = (port, attemptsLeft) => {
+      const server = app
+        .listen(port, "0.0.0.0", () => {
+          console.log("🚀 =================================");
+          console.log(`🚀 Server running on port ${port}`);
+          console.log(`🚀 Environment: ${process.env.NODE_ENV || "development"}`);
+          console.log(`📁 Uploads directory: ${uploadsDir}`);
+          console.log(`🌐 Health check: http://localhost:${port}/health`);
+          console.log("🚀 =================================");
+        })
+        .on("error", async (err) => {
+          if (err.code === "EADDRINUSE" && (attemptsLeft > 0 || attemptsLeft === Infinity)) {
+            console.warn(`⚠️ Port ${port} in use. Attempting to free it...`);
+            // Small delay to allow previous attempt to clean up
+            await killPort(port);
+            console.log('✅ Port freed. Retrying...');
+            const nextAttemptsLeft = attemptsLeft === Infinity ? Infinity : attemptsLeft - 1;
+        setTimeout(() => attemptListen(port, nextAttemptsLeft), 500);
+          } else {
+            console.error("❌ Failed to start server:", err);
+            process.exit(1);
+          }
+        });
 
-    // ✅ Graceful shutdown handling
-    process.on("SIGTERM", () => {
-      console.log("SIGTERM received. Shutting down gracefully...");
-      server.close(() => {
-        console.log("Process terminated");
-        mongoose.connection.close();
-      });
-    });
+      // Graceful shutdown
+      const gracefulShutdown = () => {
+        console.log("👋 Shutting down gracefully...");
+        server.close(() => {
+          console.log("Process terminated");
+          mongoose.connection.close();
+        });
+      };
 
-    process.on("SIGINT", () => {
-      console.log("SIGINT received. Shutting down gracefully...");
-      server.close(() => {
-        console.log("Process terminated");
-        mongoose.connection.close();
-      });
-    });
+      process.on("SIGTERM", gracefulShutdown);
+      process.on("SIGINT", gracefulShutdown);
+    };
+
+    attemptListen(basePort, maxAttempts);
   } catch (error) {
     console.error("❌ Failed to start server:", error);
     process.exit(1);
   }
 };
-export default router;
+
 
 // ✅ Start the application
 startServer();

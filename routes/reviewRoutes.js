@@ -1,32 +1,24 @@
-// models/Review.js
-import mongoose from "mongoose";
+import express from "express";
+import {
+  createReview,
+  getApartmentReviews,
+  updateReview,
+  deleteReview,
+} from "../controllers/reviewController.js";
+import authenticateToken from "../middleware/authenticateToken.js";
 
-const reviewSchema = new mongoose.Schema(
-  {
-    apartment: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Apartment",
-      required: true,
-    },
-    user: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
-    rating: {
-      type: Number,
-      required: true,
-      min: 1,
-      max: 5,
-    },
-    comment: {
-      type: String,
-      maxlength: 1000,
-    },
-  },
-  { timestamps: true }
-);
+const router = express.Router();
 
-reviewSchema.index({ apartment: 1, user: 1 }, { unique: true }); // كل مستخدم يقيم مرة واحدة فقط لكل شقة
+// Create a new review for an apartment (requires auth)
+router.post("/:apartmentId", authenticateToken, createReview);
 
-export default mongoose.model("Review", reviewSchema);
+// Get all reviews for a specific apartment (public)
+router.get("/:apartmentId", getApartmentReviews);
+
+// Update a review by ID (requires auth)
+router.put("/:reviewId", authenticateToken, updateReview);
+
+// Delete a review by ID (requires auth)
+router.delete("/:reviewId", authenticateToken, deleteReview);
+
+export default router;

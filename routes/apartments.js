@@ -347,11 +347,5 @@ app.use("*", (req, res) => {
   res.status(404).json({ message: "Route not found" });
 });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(
-    `JWT_SECRET is ${process.env.JWT_SECRET ? "configured" : "NOT configured"}`
-  );
-});
-export default router;
+
+export default app;

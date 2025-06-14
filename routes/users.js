@@ -2,7 +2,7 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import userRoutes from './auth.js';
-import connectDB from './config/db.js'; // ADD THIS if you have a database connection file
+import connectDB from '../config/db.js'; // Fixed path to database connection file
 
 
 dotenv.config();
@@ -62,7 +62,7 @@ export const requireAdmin = (req, res, next) => {
 app.use('/api/users', userRoutes);
 
 // مثال على راوتر محمي
-app.post('/protected', authenticate, (req, res) => {
+app.get('/protected', authenticate, (req, res) => {
   res.json({ message: `Hello user ${req.user.id}` });
 });
 
@@ -125,11 +125,4 @@ app.get('/api/health', (req, res) => {
     message: 'Server is running',
     timestamp: new Date().toISOString()
   });
-});
-
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Login endpoint available at: http://localhost:${PORT}/api/users/login`);
-  console.log(`User routes available at: http://localhost:${PORT}/api/users`);
 });
