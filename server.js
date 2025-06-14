@@ -110,6 +110,10 @@ const createUploadsDir = () => {
 createUploadsDir();
 export { uploadsDir };
 
+// ------------------ [ 6. Static uploads route ] ------------------
+// Make uploaded images publicly accessible at https://<host>/uploads/<filename>
+app.use("/uploads", express.static(uploadsDir));
+
 // ------------------ [ 7. الراوتس (المسارات) ] ------------------
 
 import userRoutes from "./routes/auth.js";
@@ -1294,6 +1298,36 @@ app.put(
 app.use("/api/saved-searches", savedSearchRoutes); // Authentication handled within routes
 // ✅ Static files serving
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+// ✅ Update user by ID (admin or owner)
+app.put("/api/users/:id", authenticateToken, async (req, res) => {
+  try {
+    const { name, email, phone } = req.body;
+    const updateFields = {};
+    if (name) updateFields.name = name.trim();
+    if (email) updateFields.email = email.toLowerCase().trim();
+    if (phone) updateFields.phone = phone.trim();
+
+    // Only owner or admin can update
+    if (req.user.id !== req.params.id && req.user.role !== "admin") {
+      return res.status(403).json({ success: false, message: "Unauthorized" });
+    }
+
+    const updated = await User.findByIdAndUpdate(req.params.id, updateFields, {
+      new: true,
+      runValidators: true,
+    }).select("-password");
+
+    if (!updated) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    res.json({ success: true, message: "User updated", data: updated });
+  } catch (error) {
+    console.error("Update user by ID error:", error);
+    res.status(500).json({ success: false, message: "Server error updating user" });
+  }
+});
 
 // ✅ Health check endpoint for EvenNode
 app.get("/health", (req, res) => {

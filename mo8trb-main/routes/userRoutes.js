@@ -35,7 +35,7 @@ router
 
 // Single user by ID
 router
-  .route(":id")
+  .route("/:id")
   .get(authenticate, checkOwnershipOrAdmin, getUserById)
   .put(
     authenticate,

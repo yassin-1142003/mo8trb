@@ -1060,7 +1060,7 @@
   "variable": [
     {
       "key": "base_url",
-      "value": "https://your-api-domain.com",
+      "value": "https://mo8trb.onrender.com",
       "type": "string"
     },
     {
@@ -1083,5 +1083,7 @@
       "value": "1",
       "type": "string"
     }
+  ]
+}
   ]
 }

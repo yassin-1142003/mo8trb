@@ -237,7 +237,8 @@ app.post("/api/apartments", authenticate, (req, res) => {
     }
 
     // بناء بيانات الشقة - ✅ Updated field names to match backend
-    const apartmentPics = req.file ? req.file.filename : null;
+    // Store relative path including subfolder so the static route can resolve it
+const apartmentPics = req.file ? `/uploads/apartments/${req.file.filename}` : null;
 
     // ✅ بناء بيانات الشقة - مع الحقول المُحدثة
     const apartmentData = {
